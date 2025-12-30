@@ -1,0 +1,35 @@
+# Visual Studio temporary files
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.log
+
+# Build results
+*.dll
+*.exe
+*.pdb
+
+# NuGet packages
+*.nupkg
+packages/
+
+# Rider / ReSharper
+.idea/
+*.DotSettings.user
+
+# Rider caches
+.idea/.idea.*
+*.iml
+
+# Visual Studio Code
+.vscode/
+
+# Others
+*.dbmdl
+*.dbproj.schemaview
+*.psess
+*.vsp
+*.vspscc
