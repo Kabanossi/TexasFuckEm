@@ -20,7 +20,7 @@ namespace TexasFuckEm.Classes
         public void EvaluateHand()
         {
             var counts = Hand.GroupBy(x => x.Value).Select(g => g.Count()).OrderByDescending(c => c).ToArray();
-            var values = Hand.OrderByDescending(x => x.Value).ToArray();
+            
 
 
             string type;
@@ -67,6 +67,7 @@ namespace TexasFuckEm.Classes
                     break;
 
                 case "Korkein kortti":
+                    var values = Hand.OrderByDescending(x => x.Value).ToArray();
                     CurrentHandValue = values[0].Value + values[1].Value / 100.0 + values[2].Value / 10000.0 + values[3].Value / 1000000.0 + values[4].Value / 100000000.0;
                     break;
             }
