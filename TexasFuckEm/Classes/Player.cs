@@ -20,12 +20,12 @@ namespace TexasFuckEm.Classes
         public void EvaluateHand()
         {
             var counts = Hand.GroupBy(x => x.Value).Select(g => g.Count()).OrderByDescending(c => c).ToArray();
-            
 
 
             string type;
-
-            if (counts[0] == 4) type = "Neloset";
+            if (Hand.All(c => c.SuiteofCard.Name == Hand[0].SuiteofCard.Name)) type = "Väri";
+            else if (IsStraight(Hand)) type = "Suora";
+            else if (counts[0] == 4) type = "Neloset";
             else if (counts[0] == 3 && counts[1] == 2) type = "Täyskäsi";
             else if (counts[0] == 3) type = "Kolmoset";
             else if (counts[0] == 2 && counts[1] == 2) type = "Kaksi paria";
@@ -46,6 +46,22 @@ namespace TexasFuckEm.Classes
                     int three = Hand.GroupBy(x => x.Value).First(g => g.Count() == 3).Key;
                     int pair = Hand.GroupBy(x => x.Value).First(g => g.Count() == 2).Key;
                     CurrentHandValue = 600 + three + pair / 100.0;
+                    break;
+
+                case "Väri":
+                    if (IsStraight(Hand))
+                    {
+                        CurrentHandValue = 1000;
+                        CurrentHandType = "Värisuora";
+                    }
+                    else
+                    {
+                        CurrentHandValue = 500;
+                    }
+                    break;
+
+                case "Suora":
+                    CurrentHandValue = 400;
                     break;
 
                 case "Kolmoset":
@@ -76,6 +92,26 @@ namespace TexasFuckEm.Classes
         public override string ToString()
         {
             return $"{Name}: {string.Join(' ', Hand)}";
+        }
+
+        private bool IsStraight(List<Card> hand)
+        {
+            var values = hand
+                            .Select(c => c.Value)
+                            .Distinct()
+                            .OrderBy(v => v)
+                            .ToList();
+
+            if (values.Count != 5)
+                return false;
+
+            // Normaali suora
+            bool normalStraight = values[4] - values[0] == 4;
+
+            // A-2-3-4-5
+            bool wheelStraight = values.SequenceEqual(new List<int> { 2, 3, 4, 5, 14 });
+
+            return normalStraight || wheelStraight;
         }
     }
 }

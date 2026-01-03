@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using TexasFuckEm.Classes;
 
@@ -18,9 +19,9 @@ namespace TexasFuckEm
             int deal_count = 1;
 
             Console.BackgroundColor = ConsoleColor.Red;
-            Console.WriteLine("TOP 5 PELAAJAT:");
+            Console.WriteLine("TOP 10 PELAAJAT:");
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < full_list.Count; i++)
             {
                 Console.WriteLine($"{i + 1}. {full_list[i]}");
             }
@@ -47,11 +48,36 @@ namespace TexasFuckEm
 
                     Console.Clear();
 
+                    //Yläpaneeli
                     Console.SetCursorPosition(0, 0);
                     Console.BackgroundColor = ConsoleColor.Red;
                     Console.WriteLine("Syöttämällä \"x\", peli loppuu");
                     Console.WriteLine();
                     Console.BackgroundColor = ConsoleColor.Black;
+
+                    //Voittotaulu
+                    Console.BackgroundColor = ConsoleColor.White;
+                    Console.ForegroundColor = ConsoleColor.Black;
+                    Console.SetCursorPosition(Console.WindowWidth - 17, 0);
+                    Console.WriteLine("Värisuora.....500");
+                    Console.SetCursorPosition(Console.WindowWidth - 17, 1);
+                    Console.WriteLine("Neloset.......100");
+                    Console.SetCursorPosition(Console.WindowWidth - 17, 2);
+                    Console.WriteLine("Täyskäsi.......50");
+                    Console.SetCursorPosition(Console.WindowWidth - 17, 3);
+                    Console.WriteLine("Väri...........25");
+                    Console.SetCursorPosition(Console.WindowWidth - 17, 4);
+                    Console.WriteLine("Suora..........15");
+                    Console.SetCursorPosition(Console.WindowWidth - 17, 5);
+                    Console.WriteLine("Kolmoset.......10");
+                    Console.SetCursorPosition(Console.WindowWidth - 17, 6);
+                    Console.WriteLine("Kaksi paria.....2");
+                    Console.BackgroundColor = ConsoleColor.Black;
+                    Console.ForegroundColor = ConsoleColor.White;
+
+                    Console.SetCursorPosition(0, 2);
+
+
 
                     if (balance > 0 || deal_count == 2)
                     {
@@ -61,12 +87,12 @@ namespace TexasFuckEm
 
                         if (deal_count == 1)
                         {
+
                             balance--;
 
                             deck.Shuffle();
 
                             //Ekat kortit
-
                             p.Hand = deck.DealHand(5);
                             Console.WriteLine(p.ToString());
 
@@ -130,7 +156,7 @@ namespace TexasFuckEm
 
                         Console.Clear();
                         Console.SetCursorPosition(0, 0);
-                        Console.WriteLine($"Kiitos pelaamisesta! Sinulle jäi {balance} euroa. Sijoituit sijalle {ranking}!");
+                        Console.WriteLine($"Kiitos pelaamisesta! Sinulle jäi {balance} euroa. {(ranking > 0 ? $"Sijoituit sijalle {ranking}!" : "Et päässyt Top 10:n.")}");
                         break;
                     }
 
@@ -183,14 +209,23 @@ namespace TexasFuckEm
         {
             switch (type)
             {
+                case "Värisuora":
+                    return 500;
+
                 case "Neloset":
                     return 100;
 
                 case "Täyskäsi":
-                    return 10;
+                    return 50;
+
+                case "Väri":
+                    return 25;
+
+                case "Suora":
+                    return 15;
 
                 case "Kolmoset":
-                    return 5;
+                    return 10;
 
                 case "Kaksi paria":
                     return 2;
@@ -250,19 +285,79 @@ namespace TexasFuckEm
 
             int standing = top_Players.IndexOf(player) + 1;
 
-            var lines = new List<string>();
-
-            for (int i = 0; i < top_Players.Count; i++)
+            if (standing > 10)
             {
-                lines.Add($"{top_Players[i].Name}, {top_Players[i].Money} euroa");
+                return -1;
+            }
+            else
+            {
+                var lines = new List<string>();
+
+                for (int i = 0; i < top_Players.Count; i++)
+                {
+                    lines.Add($"{top_Players[i].Name}, {top_Players[i].Money} euroa");
+                }
+
+                if (File.Exists(filepath))
+                {
+
+                    File.WriteAllLines(filepath, lines);
+                }
+                return standing;
             }
 
-            if (File.Exists(filepath))
-            {
+        }
 
-                File.WriteAllLines(filepath, lines);
+
+        //Metodeja testaukseen
+        /// <summary>
+        /// 1:Värisuora
+        /// 2:Väri
+        /// 3:Suora
+        /// </summary>
+        /// <param name="typeofhand"></param>
+        /// <returns>Korttilistan</returns>
+        private static List<Card> MakeTestHand(int typeofhand)
+        {
+            List<Card> ret = new List<Card>();
+
+            switch (typeofhand)
+            {
+                case 1:
+                    for (int i = 0; i < 5; i++)
+                    {
+                        ret.Add(
+                            new Card { SuiteofCard = new Suite() { Name = "Hearts", ShortHand = "H", Value = 4 }, Value = i + 3 }
+                            );
+                    }
+                    break;
+
+                case 2:
+                    for (int i = 0; i < 4; i++)
+                    {
+                        ret.Add(
+                            new Card { SuiteofCard = new Suite() { Name = "Hearts", ShortHand = "H", Value = 4 }, Value = i + 3 }
+                            );
+                    }
+                    ret.Add(
+                        new Card { SuiteofCard = new Suite() { Name = "Hearts", ShortHand = "H", Value = 4 }, Value = 10 }
+                        );
+                    break;
+
+                case 3:
+                    for (int i = 0; i < 4; i++)
+                    {
+                        ret.Add(
+                            new Card { SuiteofCard = new Suite() { Name = "Hearts", ShortHand = "H", Value = 4 }, Value = i + 3 }
+                            );
+                    }
+                    ret.Add(
+                        new Card { SuiteofCard = new Suite() { Name = "Spades", ShortHand = "S", Value = 4 }, Value = 7 }
+                        );
+                    break;
             }
-            return standing;
+
+            return ret;
         }
 
 
