@@ -10,6 +10,7 @@ namespace TexasFuckEm.Classes
         public List<Card>? Hand { get; set; }
         public double? CurrentHandValue { get; set; }
         public string? CurrentHandType { get; set; }
+        public int MpPoints { get; set; }
 
         public Player()
         {

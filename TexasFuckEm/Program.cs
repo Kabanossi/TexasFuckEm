@@ -40,6 +40,7 @@ namespace TexasFuckEm
 
                 for (int i = 0; i < playercount; i++)
                 {
+                    Console.Clear();
                     Console.Write($"Anna pelaajan {i + 1} nimi: ");
                     Player mp = new Player() { Name = Console.ReadLine() ?? "Idiootti" };
                     players.Add(mp);
@@ -52,6 +53,7 @@ namespace TexasFuckEm
 
             if (!multiplayer)
             {
+                Console.Clear();
                 DrawStartUp(balance);
             }
 
@@ -158,7 +160,7 @@ namespace TexasFuckEm
             else if (players.Count > 1 && multiplayer)
             //MULTIPLAYER
             {
-                handCount = 1;
+                handCount = 0;
                 do
                 {
                     deck = new Deck();
@@ -168,7 +170,6 @@ namespace TexasFuckEm
                     if (deal_count == 1)
                     {
                         DrawBannerAndProfitList();
-                        handCount++;
 
                         deck.Shuffle();
 
@@ -182,48 +183,69 @@ namespace TexasFuckEm
                     }
                     if (deal_count == 2)
                     {
-                        DrawBannerAndProfitList();
                         foreach (var mp in players)
                         {
-                            mp.EvaluateHand();
-                            Console.WriteLine($"{mp.ToString()} ({mp.CurrentHandValue})");
+                            mp.EvaluateHand();                            
                         }
+
+                        Player winner = players.OrderByDescending(x => x.CurrentHandValue).FirstOrDefault();
+                        winner.MpPoints++;
+
+
+                        handCount++;
+                        DrawBannerAndProfitList();
+
+                        foreach (var mp in players)
+                        {
+                            Console.WriteLine($"{mp.ToString()} {mp.CurrentHandType} ({mp.CurrentHandValue})");
+                        }
+
+                        Console.WriteLine();
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"Tämän käden voitti {winner.Name}!");
+                        Console.ForegroundColor = ConsoleColor.White;
+
+
+
+                        string command = DrawCommandLine(deal_count, multiplayer);
+                        DetermineCommand(command, deal_count, 0);
+                        if (command == "x") break;
 
                     }
                     //KORTTIEN VAIHTO
-                    foreach (var mp in players)
+                    if (deal_count == 1)
                     {
-                        string command = DrawCommandLine(deal_count, multiplayer, mp);
-
-                        if (deal_count == 1)
+                        foreach (var mp in players)
                         {
-                            try
-                            {
-                                int[] discard;
-                                discard = Array.ConvertAll(command.Split(','), int.Parse);
+                            string command = DrawCommandLine(deal_count, multiplayer, mp);
 
-                                foreach (var i in discard.OrderByDescending(x => x))
+                            if (deal_count == 1)
+                            {
+                                var backuphand = mp.Hand;
+                                try
                                 {
-                                    mp.Hand.RemoveAt(i - 1);
+                                    int[] discard;
+                                    discard = Array.ConvertAll(command.Split(','), int.Parse);
+
+                                    foreach (var i in discard.OrderByDescending(x => x))
+                                    {
+                                        mp.Hand.RemoveAt(i - 1);
+                                    }
+
+                                    mp.Hand.AddRange(deck.DealHand(discard.Length));
+
+
                                 }
-
-                                mp.Hand.AddRange(deck.DealHand(discard.Length));
-
-
+                                catch (Exception e)
+                                {
+                                    mp.Hand = backuphand;
+                                }
                             }
-                            catch (Exception e)
-                            {
 
-                            }
                         }
-
-                        //DetermineCommand(command, deal_count, 0);
-
-                        if (command == "x") break;
                     }
 
                     deal_count = deal_count == 1 ? 2 : 1;
-
 
                 } while (true);
             }
@@ -346,15 +368,14 @@ namespace TexasFuckEm
         }
         private static void DrawBannerAndProfitList()
         {
-            //Yläpaneeli
-            Console.SetCursorPosition(0, 0);
-            Console.BackgroundColor = ConsoleColor.Red;
-            Console.WriteLine("Syöttämällä \"x\" missä tahansa vaiheessa, peli loppuu");
-            Console.WriteLine();
-            Console.BackgroundColor = ConsoleColor.Black;
-
             if (!multiplayer)
             {
+                //Yläpaneeli
+                Console.SetCursorPosition(0, 0);
+                Console.BackgroundColor = ConsoleColor.Red;
+                Console.WriteLine("Syöttämällä \"x\" missä tahansa vaiheessa, peli loppuu");
+                Console.WriteLine();
+                Console.BackgroundColor = ConsoleColor.Black;
                 //Voittotaulu
                 Console.BackgroundColor = ConsoleColor.Green;
                 Console.ForegroundColor = ConsoleColor.Red;
@@ -382,18 +403,35 @@ namespace TexasFuckEm
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.SetCursorPosition(Console.WindowWidth - 19, 10);
                 Console.WriteLine($"PANOS: {bet}");
+
+                Console.SetCursorPosition(0, 2);
             }
             else
             {
                 Console.BackgroundColor = ConsoleColor.White;
                 Console.ForegroundColor = ConsoleColor.Black;
-                Console.SetCursorPosition(Console.WindowWidth - 18, 1);
-                Console.WriteLine($"Käsiä pelattu: {handCount}");
+                Console.SetCursorPosition(Console.WindowWidth - 20, 1);
+                Console.WriteLine($" Käsiä pelattu: {handCount} ");
                 Console.BackgroundColor = ConsoleColor.Black;
                 Console.ForegroundColor = ConsoleColor.White;
+
+
+                Console.SetCursorPosition(0, 1);
+                Console.WriteLine(" PISTEET: ");
+                Console.WriteLine("----------");
+
+                var mpPlayerPoints = players.OrderByDescending(x => x.MpPoints).ToList();
+
+                for (int i = 0; i < mpPlayerPoints.Count; i++)
+                {
+                    Console.WriteLine($"{mpPlayerPoints[i].Name} {mpPlayerPoints[i].MpPoints}");
+                }
+                Console.WriteLine("------------------------------------------");
+
+                Console.SetCursorPosition(0, players.Count + 5);
             }
 
-                Console.SetCursorPosition(0, 2);
+
         }
         private static void DetermineCommand(string command, int dc, int balance)
         {
@@ -401,15 +439,38 @@ namespace TexasFuckEm
             {
                 case "x":
                     //lopetus
-                    Top_Player tp = new Top_Player();
-                    tp.Name = p.Name;
-                    tp.Money = balance;
+                    if (!multiplayer)
+                    {
+                        Top_Player tp = new Top_Player();
+                        tp.Name = p.Name;
+                        tp.Money = balance;
 
-                    int ranking = AddToScorelist(tp, full_list, filePath);
+                        int ranking = AddToScorelist(tp, full_list, filePath);
 
-                    Console.Clear();
-                    Console.SetCursorPosition(0, 0);
-                    Console.WriteLine($"Kiitos pelaamisesta! Sinulle jäi {balance} euroa. {(ranking > 0 ? $"Sijoituit sijalle {ranking}!" : "Et päässyt Top 10:n.")}");
+                        Console.Clear();
+                        Console.SetCursorPosition(0, 0);
+                        Console.WriteLine($"Kiitos pelaamisesta! Sinulle jäi {balance} euroa. {(ranking > 0 ? $"Sijoituit sijalle {ranking}!" : "Et päässyt Top 10:n.")}");
+                    }
+                    else
+                    {
+                        Console.Clear();
+                        Console.SetCursorPosition(0, 1);
+                        Console.ForegroundColor = ConsoleColor.Red;
+
+                        var winner = players.OrderByDescending(x => x.MpPoints).FirstOrDefault();
+
+                        Console.WriteLine($"Kiitos pelaamisesta! Pelasitte {handCount} kättä! Voittaja oli {winner.Name}!");
+                        Console.WriteLine();
+                        Console.WriteLine("Tässä lopulliset pisteet:");
+                        Console.WriteLine();
+
+                        foreach (var mp in players.OrderByDescending(x => x.MpPoints))
+                        {
+                            Console.WriteLine($"{mp.Name}: {mp.MpPoints} pistettä");
+                        }
+
+                        Console.ForegroundColor = ConsoleColor.White;
+                    }
                     break;
 
                 case "1":
@@ -473,8 +534,8 @@ namespace TexasFuckEm
             string d2;
             if (mp)
             {
-                d1 = $"{mpl.Name}, Valitse poistettavat kortit: ";
-                d2 = "Enter: Seuraava käsi";
+                d1 = $"{(mpl != null ? mpl.Name : "")}, Valitse poistettavat kortit: ";
+                d2 = "Enter: Seuraava käsi | \"x\": Lopeta peli ";
             }
             else
             {
