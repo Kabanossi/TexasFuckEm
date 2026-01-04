@@ -52,21 +52,40 @@ namespace TexasFuckEm.Classes
                 case "Väri":
                     if (IsStraight(Hand))
                     {
-                        CurrentHandValue = 1000;
+                        var points = Hand.OrderByDescending(x => x.Value).ToArray();
+                        CurrentHandValue = 800 + Hand.FirstOrDefault().SuiteofCard.Value +
+                                                 points[0].Value / 100.0 +
+                                                 points[1].Value / 10000.0 +
+                                                 points[2].Value / 1000000.0 +
+                                                 points[3].Value / 100000000.0 +
+                                                 points[4].Value / 10000000000.0;
+
                         CurrentHandType = "Värisuora";
                     }
                     else
                     {
-                        CurrentHandValue = 500;
+                        var points = Hand.OrderByDescending(x => x.Value).ToArray();
+                        CurrentHandValue = 500 + Hand.FirstOrDefault().SuiteofCard.Value +
+                                                 points[0].Value / 100.0 + 
+                                                 points[1].Value / 10000.0 + 
+                                                 points[2].Value / 1000000.0 + 
+                                                 points[3].Value / 100000000.0 + 
+                                                 points[4].Value / 10000000000.0;
+
                     }
                     break;
 
                 case "Suora":
-                    CurrentHandValue = 400;
+                    var points2 = Hand.OrderByDescending(x => x.Value).ToArray();
+                    CurrentHandValue = 400 + points2[0].Value +
+                                             points2[1].Value / 100.0 +
+                                             points2[2].Value / 10000.0 +
+                                             points2[3].Value / 1000000.0 +
+                                             points2[4].Value / 100000000.0;
                     break;
 
                 case "Kolmoset":
-                    three = Hand.GroupBy(x => x.Value).First(g => g.Count() == 3).Key;
+                    three = Hand.GroupBy(x => x.Value).First(g => g.Count() == 3).Key;//esim jätkä on 11
                     var kickers = Hand.Where(x => x.Value != three).OrderByDescending(x => x.Value).ToArray();
                     CurrentHandValue = 300 + three + kickers[0].Value / 100.0 + kickers[1].Value / 10000.0;
                     break;
