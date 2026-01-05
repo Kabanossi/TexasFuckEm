@@ -53,7 +53,7 @@ namespace TexasFuckEm.Classes
                     if (IsStraight(Hand))
                     {
                         var points = Hand.OrderByDescending(x => x.Value).ToArray();
-                        CurrentHandValue = 800 + Hand.FirstOrDefault().SuiteofCard.Value +
+                        CurrentHandValue = 800 +
                                                  points[0].Value / 100.0 +
                                                  points[1].Value / 10000.0 +
                                                  points[2].Value / 1000000.0 +
@@ -65,7 +65,7 @@ namespace TexasFuckEm.Classes
                     else
                     {
                         var points = Hand.OrderByDescending(x => x.Value).ToArray();
-                        CurrentHandValue = 500 + Hand.FirstOrDefault().SuiteofCard.Value +
+                        CurrentHandValue = 500 +
                                                  points[0].Value / 100.0 + 
                                                  points[1].Value / 10000.0 + 
                                                  points[2].Value / 1000000.0 + 
@@ -111,7 +111,13 @@ namespace TexasFuckEm.Classes
         }
         public override string ToString()
         {
-            return $"{Name}: {string.Join(' ', Hand)}";
+            string cards = "";
+            foreach (var c in Hand)
+            {
+                cards += $"|{c.ToString()}| ";
+            }
+
+            return $"{Name}: {cards}";
         }
 
         private bool IsStraight(List<Card> hand)

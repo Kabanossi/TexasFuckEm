@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using TexasFuckEm.Classes;
@@ -8,7 +9,6 @@ namespace TexasFuckEm
 {
     class Program
     {
-
         static Player p;
         static string filePath;
         static List<string> full_list;
@@ -24,6 +24,9 @@ namespace TexasFuckEm
 
         static void Main()
         {
+
+            Console.Title = "Pokeripeli 1.0";
+
             filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scorelist.txt");
             full_list = File.ReadAllLines(filePath).ToList();
 
@@ -34,9 +37,9 @@ namespace TexasFuckEm
 
             int balance = 50;
 
-            //alkuruutu
+            //Aloitusruutu
+            DrawWelcomeScreen();
 
-            Console.Write("Pelaajien määrä: ");
             playercount = int.TryParse(Console.ReadLine(), out playercount) ? playercount : 1;
 
             if (playercount > 1)
@@ -50,24 +53,21 @@ namespace TexasFuckEm
                     DrawStartUp(0);
                     Console.Write($"Anna pelaajan {i + 1} nimi: ");
                     Player mp = new Player() { Name = Console.ReadLine() ?? "Idiootti" };
+                    mp.Name = mp.Name == "" ? "Idiootti" : mp.Name;
                     players.Add(mp);
                 }
             }
             else
             {
                 multiplayer = false;
-            }
-
-            if (!multiplayer)
-            {
                 Console.Clear();
                 DrawStartUp(balance);
             }
 
             int deal_count = 1;
 
-            if (p != null)
-            {
+            if (p != null && !multiplayer)
+            {//SINGLEPLAYER
                 do
                 {
                     deck = new Deck();
@@ -134,22 +134,23 @@ namespace TexasFuckEm
 
                     if (deal_count == 1)
                     {//KORTTIEN VAIHTO
+                        var backuphand = p.Hand;
                         try
                         {
                             int[] discard;
-                            discard = Array.ConvertAll(command.Split(','), int.Parse);
+                            discard = Array.ConvertAll(command.Split(' '), int.Parse);
 
-                            foreach (var i in discard.OrderByDescending(x => x))
-                            {
-                                p.Hand.RemoveAt(i - 1);
-                            }
+                            discard = discard.Select(x => x - 1).ToHashSet().ToArray();
 
-                            p.Hand.AddRange(deck.DealHand(discard.Length));
+                            p.Hand = p.Hand.Where((item, index) => discard.Contains(index)).ToList();
+
+                            p.Hand.AddRange(deck.DealHand(5 - discard.Length));
 
                             deal_count = 2;
                         }
                         catch (Exception e)
                         {
+                            p.Hand = backuphand;
                             deal_count = 2;
                         }
                     }
@@ -184,7 +185,7 @@ namespace TexasFuckEm
 
                         foreach (var mp in players)
                         {
-                            mp.Hand = deck.DealHand(5); //MakeTestHand(1);
+                            mp.Hand = deck.DealHand(5);//MakeTestHand(2); 
                             Console.WriteLine(mp.ToString());
                         }
 
@@ -196,8 +197,16 @@ namespace TexasFuckEm
                             mp.EvaluateHand();
                         }
 
-                        Player winner = players.OrderByDescending(x => x.CurrentHandValue).FirstOrDefault();
-                        winner.MpPoints++;
+                        double bestValue = (double)players.Max(x => x.CurrentHandValue);
+
+                        var winners = players
+                            .Where(x => x.CurrentHandValue == bestValue)
+                            .ToList();
+                        
+                        foreach (var win in winners)
+                        {
+                            win.MpPoints++;
+                        }
 
 
                         handCount++;
@@ -210,8 +219,21 @@ namespace TexasFuckEm
 
                         Console.WriteLine();
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"Tämän käden voitti {winner.Name}!");
-                        Console.ForegroundColor = ConsoleColor.White;
+                        if (winners.Count==1)
+                        {
+                            Console.WriteLine($"Tämän käden voitti {winners[0].Name}!");
+                        }
+                        else if(winners.Count==players.Count)
+                        {
+                            Console.WriteLine("Tasapeli kaikkien kesken!");
+                        }
+                        else
+                        {
+                            string winnerNames = string.Join(", ", winners.Select(p => p.Name));
+                            Console.WriteLine($"Kädellä useampia voittajia: {winnerNames}!");
+                        }
+
+                            Console.ForegroundColor = ConsoleColor.White;
 
 
 
@@ -233,14 +255,13 @@ namespace TexasFuckEm
                                 try
                                 {
                                     int[] discard;
-                                    discard = Array.ConvertAll(command.Split(','), int.Parse);
+                                    discard = Array.ConvertAll(command.Split(' '), int.Parse);
 
-                                    foreach (var i in discard.OrderByDescending(x => x))
-                                    {
-                                        mp.Hand.RemoveAt(i - 1);
-                                    }
+                                    discard = discard.Select(x => x - 1).ToHashSet().ToArray();
 
-                                    mp.Hand.AddRange(deck.DealHand(discard.Length));
+                                    mp.Hand = mp.Hand.Where((item, index) => discard.Contains(index)).ToList();
+
+                                    mp.Hand.AddRange(deck.DealHand(5 - discard.Length));
 
 
                                 }
@@ -609,12 +630,12 @@ namespace TexasFuckEm
             string d2;
             if (mp)
             {
-                d1 = $"{(mpl != null ? mpl.Name : "")}, Valitse poistettavat kortit: ";
+                d1 = $"{(mpl != null ? mpl.Name : "")}, Valitse säilytettävät kortit välilyönnillä erotettuna: ";
                 d2 = "Enter: Seuraava käsi | \"x\": Lopeta peli ";
             }
             else
             {
-                d1 = "Valitse poistettavat kortit: ";
+                d1 = "Valitse säilytettävät kortit välilyönnillä erotettuna: ";
                 d2 = "Enter: Seuraava käsi | 1 - 5 : Vaihda panosta: ";
             }
 
@@ -626,7 +647,19 @@ namespace TexasFuckEm
 
             return ReadInputAt(deal_count == 1 ? c1 : c2, inputY);
         }
-
+        private static void DrawWelcomeScreen()
+        {
+            Console.WriteLine("██████╗  ██████╗ ██╗  ██╗███████╗██████╗ ██╗");
+            Console.WriteLine("██╔══██╗██╔═══██╗██║ ██╔╝██╔════╝██╔══██╗██║");
+            Console.WriteLine("██████╔╝██║   ██║█████╔╝ █████╗  ██████╔╝██║");
+            Console.WriteLine("██╔═══╝ ██║   ██║██╔═██╗ ██╔══╝  ██╔══██╗██║");
+            Console.WriteLine("██║     ╚██████╔╝██║  ██╗███████╗██║  ██║██║");
+            Console.WriteLine("╚═╝      ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝");
+            Console.WriteLine();
+            Console.WriteLine("              v 1.0");
+            Console.WriteLine();
+            Console.Write("Tervetuloa pelaamaan paskaa pokeria. Syötä pelaajien määrä: ");
+        }
 
         //Metodeja testaukseen
         /// <summary>
