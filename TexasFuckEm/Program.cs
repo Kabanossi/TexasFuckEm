@@ -12,6 +12,8 @@ namespace TexasFuckEm
         static Player p;
         static string filePath;
         static List<string> full_list;
+        static string filePath_mp;
+        static List<string> full_list_mp;
         static int bet;
         static int inputY;
         static Deck deck;
@@ -24,6 +26,10 @@ namespace TexasFuckEm
         {
             filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scorelist.txt");
             full_list = File.ReadAllLines(filePath).ToList();
+
+            filePath_mp = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scorelist_mp.txt");
+            full_list_mp = File.ReadAllLines(filePath_mp).ToList();
+
             inputY = Console.WindowHeight - 2;
 
             int balance = 50;
@@ -41,6 +47,7 @@ namespace TexasFuckEm
                 for (int i = 0; i < playercount; i++)
                 {
                     Console.Clear();
+                    DrawStartUp(0);
                     Console.Write($"Anna pelaajan {i + 1} nimi: ");
                     Player mp = new Player() { Name = Console.ReadLine() ?? "Idiootti" };
                     players.Add(mp);
@@ -180,12 +187,13 @@ namespace TexasFuckEm
                             mp.Hand = deck.DealHand(5); //MakeTestHand(1);
                             Console.WriteLine(mp.ToString());
                         }
+
                     }
                     if (deal_count == 2)
                     {
                         foreach (var mp in players)
                         {
-                            mp.EvaluateHand();                            
+                            mp.EvaluateHand();
                         }
 
                         Player winner = players.OrderByDescending(x => x.CurrentHandValue).FirstOrDefault();
@@ -324,37 +332,71 @@ namespace TexasFuckEm
             Console.CursorVisible = false;
             return input;
         }
-        private static int AddToScorelist(Top_Player player, List<string> full_list, string filepath)
+        private static int AddToScorelist(List<Top_Player> playerlist, List<string> full_list, string filepath)
         {
-            List<Top_Player> top_Players = new List<Top_Player>();
-
-            top_Players.Add(player);
-
-            foreach (var x in full_list)
+            if (!multiplayer)
             {
-                var match = Regex.Match(x, @"^(.*),\s*(\d+)\s*euroa$");
+                List<Top_Player> top_Players = playerlist;
 
-                string n = match.Groups[1].Value;
-                int m = int.Parse(match.Groups[2].Value);
+                var player = top_Players.FirstOrDefault();
 
-                top_Players.Add(new Top_Player { Money = m, Name = n });
-            }
+                foreach (var x in full_list)
+                {
+                    var match = Regex.Match(x, @"^(.*),\s*(\d+)\s*euroa$");
 
-            top_Players = top_Players.OrderByDescending(x => x.Money).ToList();
+                    string n = match.Groups[1].Value;
+                    int m = int.Parse(match.Groups[2].Value);
 
-            int standing = top_Players.IndexOf(player) + 1;
+                    top_Players.Add(new Top_Player { Money = m, Name = n });
+                }
 
-            if (standing > 10)
-            {
-                return -1;
+                top_Players = top_Players.OrderByDescending(x => x.Money).ToList();
+
+                int standing = top_Players.IndexOf(player) + 1;
+
+                if (standing > 10)
+                {
+                    return -1;
+                }
+                else
+                {
+                    var lines = new List<string>();
+
+                    for (int i = 0; i < top_Players.Count; i++)
+                    {
+                        lines.Add($"{top_Players[i].Name}, {top_Players[i].Money} euroa");
+                    }
+
+                    if (File.Exists(filepath))
+                    {
+
+                        File.WriteAllLines(filepath, lines);
+                    }
+                    return standing;
+                }
             }
             else
             {
+                List<Top_Player> top_Players = playerlist;
+
+                var player = top_Players.FirstOrDefault();
+
+                foreach (var x in full_list)
+                {
+                    var match = Regex.Match(x, @"^(.*),\s*(\d+)\s*voitettua kättä$");
+
+                    string n = match.Groups[1].Value;
+                    int m = int.Parse(match.Groups[2].Value);
+
+                    top_Players.Add(new Top_Player { Money = m, Name = n });
+                }
+                top_Players = top_Players.Where(s => s.Money > 0).OrderByDescending(x => x.Money).Take(10).ToList();
+
                 var lines = new List<string>();
 
                 for (int i = 0; i < top_Players.Count; i++)
                 {
-                    lines.Add($"{top_Players[i].Name}, {top_Players[i].Money} euroa");
+                    lines.Add($"{top_Players[i].Name}, {top_Players[i].Money} voitettua kättä");
                 }
 
                 if (File.Exists(filepath))
@@ -362,7 +404,7 @@ namespace TexasFuckEm
 
                     File.WriteAllLines(filepath, lines);
                 }
-                return standing;
+                return 0;
             }
 
         }
@@ -441,18 +483,33 @@ namespace TexasFuckEm
                     //lopetus
                     if (!multiplayer)
                     {
+                        List<Top_Player> tpl = new List<Top_Player>();
                         Top_Player tp = new Top_Player();
                         tp.Name = p.Name;
                         tp.Money = balance;
+                        tpl.Add(tp);
 
-                        int ranking = AddToScorelist(tp, full_list, filePath);
+                        int ranking = AddToScorelist(tpl, full_list, filePath);
 
                         Console.Clear();
                         Console.SetCursorPosition(0, 0);
                         Console.WriteLine($"Kiitos pelaamisesta! Sinulle jäi {balance} euroa. {(ranking > 0 ? $"Sijoituit sijalle {ranking}!" : "Et päässyt Top 10:n.")}");
+                        Console.WriteLine("Paina Enter lopettaaksesi.");
                     }
                     else
                     {
+                        List<Top_Player> tpl = new List<Top_Player>();
+
+                        foreach (var mp in players)
+                        {
+                            Top_Player tp = new Top_Player();
+                            tp.Name = mp.Name;
+                            tp.Money = mp.MpPoints;
+                            tpl.Add(tp);
+                        }
+
+                        int ranking = AddToScorelist(tpl, full_list_mp, filePath_mp);
+
                         Console.Clear();
                         Console.SetCursorPosition(0, 1);
                         Console.ForegroundColor = ConsoleColor.Red;
@@ -468,9 +525,11 @@ namespace TexasFuckEm
                         {
                             Console.WriteLine($"{mp.Name}: {mp.MpPoints} pistettä");
                         }
-
+                        Console.WriteLine("");
+                        Console.WriteLine("Paina Enter lopettaaksesi.");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
+                    Console.ReadLine();
                     break;
 
                 case "1":
@@ -499,31 +558,47 @@ namespace TexasFuckEm
         }
         private static void DrawStartUp(int balance)
         {
-            Console.BackgroundColor = ConsoleColor.Red;
-            Console.WriteLine("TOP 10 PELAAJAT:");
-
-            for (int i = 0; i < full_list.Count; i++)
+            if (!multiplayer)
             {
-                Console.WriteLine($"{i + 1}. {full_list[i]}");
+                Console.BackgroundColor = ConsoleColor.Red;
+                Console.WriteLine("TOP 10 PELAAJAT:");
+
+                for (int i = 0; i < full_list.Count; i++)
+                {
+                    Console.WriteLine($"{i + 1}. {full_list[i]}");
+                }
+
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.WriteLine();
+
+                Console.Write("Anna pelaajan nimi: ");
+
+
+                p = new Player() { Name = Console.ReadLine() ?? "Idiootti" };
+                p.Name = p.Name == "" ? "Idiootti" : p.Name;
+
+                Console.WriteLine($"Rahamäärä: {balance}");
+
+                //int.TryParse(Console.ReadLine(), out balance);
+
+
+                Console.Write("Anna panos (1 - 5) ja aloita: ");
+                bet = int.TryParse(Console.ReadLine(), out bet) ? bet : 1;
+                bet = bet > 5 ? 5 : bet;
             }
+            else
+            {
+                Console.BackgroundColor = ConsoleColor.Red;
+                Console.WriteLine("TOP 10 MONINPELAAJAT:");
 
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.WriteLine();
+                for (int i = 0; i < full_list_mp.Count; i++)
+                {
+                    Console.WriteLine($"{i + 1}. {full_list_mp[i]}");
+                }
 
-            Console.Write("Anna pelaajan nimi: ");
-
-
-            p = new Player() { Name = Console.ReadLine() ?? "Idiootti" };
-            p.Name = p.Name == "" ? "Idiootti" : p.Name;
-
-            Console.WriteLine($"Rahamäärä: {balance}");
-
-            //int.TryParse(Console.ReadLine(), out balance);
-
-
-            Console.Write("Anna panos (1 - 5) ja aloita: ");
-            bet = int.TryParse(Console.ReadLine(), out bet) ? bet : 1;
-            bet = bet > 5 ? 5 : bet;
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.WriteLine();
+            }
         }
         private static string DrawCommandLine(int deal_count, bool mp, Player mpl = null)
         {
