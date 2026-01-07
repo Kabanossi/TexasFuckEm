@@ -137,14 +137,21 @@ namespace TexasFuckEm
                         var backuphand = p.Hand;
                         try
                         {
-                            int[] discard;
-                            discard = Array.ConvertAll(command.Split(' '), int.Parse);
+                            if (command == "")
+                            {
+                                p.Hand = deck.DealHand(5);
+                            }
+                            else
+                            {
+                                int[] discard;
+                                discard = Array.ConvertAll(command.Split(' '), int.Parse);
 
-                            discard = discard.Select(x => x - 1).ToHashSet().ToArray();
+                                discard = discard.Select(x => x - 1).ToHashSet().ToArray();
 
-                            p.Hand = p.Hand.Where((item, index) => discard.Contains(index)).ToList();
+                                p.Hand = p.Hand.Where((item, index) => discard.Contains(index)).ToList();
 
-                            p.Hand.AddRange(deck.DealHand(5 - discard.Length));
+                                p.Hand.AddRange(deck.DealHand(5 - discard.Length));
+                            }
 
                             deal_count = 2;
                         }
@@ -202,7 +209,7 @@ namespace TexasFuckEm
                         var winners = players
                             .Where(x => x.CurrentHandValue == bestValue)
                             .ToList();
-                        
+
                         foreach (var win in winners)
                         {
                             win.MpPoints++;
@@ -219,11 +226,11 @@ namespace TexasFuckEm
 
                         Console.WriteLine();
                         Console.ForegroundColor = ConsoleColor.Red;
-                        if (winners.Count==1)
+                        if (winners.Count == 1)
                         {
                             Console.WriteLine($"Tämän käden voitti {winners[0].Name}!");
                         }
-                        else if(winners.Count==players.Count)
+                        else if (winners.Count == players.Count)
                         {
                             Console.WriteLine("Tasapeli kaikkien kesken!");
                         }
@@ -233,7 +240,7 @@ namespace TexasFuckEm
                             Console.WriteLine($"Kädellä useampia voittajia: {winnerNames}!");
                         }
 
-                            Console.ForegroundColor = ConsoleColor.White;
+                        Console.ForegroundColor = ConsoleColor.White;
 
 
 
@@ -254,14 +261,22 @@ namespace TexasFuckEm
                                 var backuphand = mp.Hand;
                                 try
                                 {
-                                    int[] discard;
-                                    discard = Array.ConvertAll(command.Split(' '), int.Parse);
+                                    if (command == "")
+                                    {
+                                        mp.Hand = deck.DealHand(5);
+                                    }
+                                    else
+                                    {
+                                        int[] discard;
+                                        discard = Array.ConvertAll(command.Split(' '), int.Parse);
 
-                                    discard = discard.Select(x => x - 1).ToHashSet().ToArray();
+                                        discard = discard.Select(x => x - 1).ToHashSet().ToArray();
 
-                                    mp.Hand = mp.Hand.Where((item, index) => discard.Contains(index)).ToList();
+                                        mp.Hand = mp.Hand.Where((item, index) => discard.Contains(index)).ToList();
 
-                                    mp.Hand.AddRange(deck.DealHand(5 - discard.Length));
+                                        mp.Hand.AddRange(deck.DealHand(5 - discard.Length));
+                                    }
+
 
 
                                 }
